@@ -32,9 +32,10 @@
   --g: 2px;
   --r: 6px;
 }
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-/* ダブルタップ／連打での 拡大を とめる（ピンチでの 拡大は のこす） */
-html{touch-action:manipulation;}
+/* touch-action は 継承されないので すべての 要素に かける。
+   これで ボタンを ふくむ どこを 連打しても ダブルタップ拡大は 起きない
+   （ピンチでの 拡大や スクロールは のこる）。 */
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{margin:0;padding:0;}
 body{
   background:var(--desk);
