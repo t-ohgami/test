@@ -33,6 +33,8 @@
   --r: 6px;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+/* ダブルタップ／連打での 拡大を とめる（ピンチでの 拡大は のこす） */
+html{touch-action:manipulation;}
 html,body{margin:0;padding:0;}
 body{
   background:var(--desk);
