@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>さんすう みえるばん</title>
+<style>
+:root{
+  --desk:#E4E9E3;
+  --paper:#FFFFFF;
+  --grid:#DCE7E0;
+  --ink:#26302E;
+  --ink-soft:#6E7C78;
+  --line:#C8D3CD;
+
+  --ten:#2F6FB0;      /* 十のくらい */
+  --ten-soft:#E0EBF7;
+  --one:#DD8722;      /* 一のくらい */
+  --one-soft:#FBECD8;
+  --hun:#7657A6;      /* 百のくらい */
+  --hun-soft:#EBE4F6;
+  --red:#C7473F;      /* くりあがり・くりさがりの しるし */
+  --ok:#3A8A61;
+  --obj:#2C8580;      /* ながさで はかる もの */
+
+  --u: clamp(15px, 4.2vw, 22px);   /* ブロック1こ */
+  --g: 2px;
+  --r: 6px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--desk);
+  color:var(--ink);
+  font-family:"UD デジタル 教科書体 NP-R","UD デジタル 教科書体 N-R","BIZ UDPGothic","Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN W4","Yu Gothic Medium","游ゴシック体",sans-serif;
+  font-size:17px; line-height:1.6;
+  padding:0 0 96px;
+  -webkit-font-smoothing:antialiased;
+}
+h1{font-size:19px;margin:0;letter-spacing:.04em;}
+
+/* ---------- ヘッダー / タブ ---------- */
+header{
+  position:sticky; top:0; z-index:20;
+  background:var(--desk);
+  padding:12px 14px 0;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.brand small{color:var(--ink-soft);font-size:12px;letter-spacing:.08em;}
+nav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;}
+nav::-webkit-scrollbar{display:none;}
+.tab{
+  flex:0 0 auto;
+  border:1px solid var(--line); border-bottom:none;
+  background:#EEF2EE; color:var(--ink-soft);
+  padding:9px 14px; border-radius:10px 10px 0 0;
+  font-size:15px; cursor:pointer; font-family:inherit;
+  translate:0 1px;
+}
+.tab[aria-selected="true"]{background:var(--paper); color:var(--ink); font-weight:700; box-shadow:0 -2px 0 var(--ten) inset;}
+
+/* ---------- 用紙 ---------- */
+main{padding:14px;max-width:820px;margin:0 auto;}
+.paper{
+  background:var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:20px 20px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px 14px;
+  box-shadow:0 1px 0 #fff inset, 0 2px 6px rgba(40,60,55,.06);
+}
+.paper + .paper{margin-top:14px;}
+.cap{
+  font-size:12px;letter-spacing:.14em;color:var(--ink-soft);
+  margin:0 0 10px;
+}
+
+/* ---------- 位取り板 ---------- */
+.board{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+.pcol{
+  border:1.5px solid var(--line); border-radius:10px;
+  background:rgba(255,255,255,.75);
+  padding:6px 7px 8px; min-height:96px;
+  transition:box-shadow .2s, border-color .2s;
+}
+.pcol.on{border-color:currentColor; box-shadow:0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);}
+.pcol[data-p="ten"]{color:var(--ten);}
+.pcol[data-p="one"]{color:var(--one);}
+.pcol[data-p="hun"]{color:var(--hun);}
+.phead{
+  font-size:12px;font-weight:700;letter-spacing:.08em;
+  display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+  margin-bottom:6px;
+}
+.phead b{font-size:17px;}
+
+.strip{display:flex;gap:var(--g);padding:3px;border:2px solid var(--ten);border-radius:5px;background:var(--ten-soft);margin-bottom:5px;}
+.strip .cube{background:var(--ten);}
+.plate{
+  width:calc(10*var(--u) + 9*var(--g) + 6px);
+  height:calc(4*var(--u));
+  border:2px solid var(--hun);border-radius:5px;background:var(--hun-soft);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:var(--hun);margin-bottom:5px;
+  background-image:linear-gradient(90deg,rgba(118,87,166,.22) 1px,transparent 1px),linear-gradient(rgba(118,87,166,.22) 1px,transparent 1px);
+  background-size:calc((100% - 0px)/10) 25%;
+}
+.cube{
+  width:var(--u); height:var(--u);
+  background:var(--one); border-radius:3px;
+  display:block;
+}
+.frame{
+  display:grid;grid-template-columns:repeat(5,var(--u));gap:var(--g);
+  padding:4px;border:1.5px dashed var(--line);border-radius:6px;
+  position:relative;width:max-content;
+}
+.frame .slot{width:var(--u);height:var(--u);border-radius:3px;background:#F0F3F0;}
+.frame.full{border-style:solid;border-color:var(--ten);background:var(--ten-soft);}
+.frame.bundled .cube{background:var(--ten);}
+.band{
+  position:absolute;inset:-6px -8px;border:2.5px solid var(--ten);border-radius:8px;
+  pointer-events:none;
+}
+.band::after{
+  content:"10の たば";position:absolute;top:-11px;left:6px;
+  background:var(--paper);color:var(--ten);font-size:11px;font-weight:700;padding:0 4px;
+}
+.spill{display:flex;flex-wrap:wrap;gap:var(--g);max-width:calc(5*var(--u) + 4*var(--g) + 8px);margin-top:7px;}
+.cube.gone{background:#D7DCD8;position:relative;}
+.cube.gone::after{content:"";position:absolute;inset:0;background:linear-gradient(45deg,transparent 44%,var(--red) 44%,var(--red) 56%,transparent 56%);}
+.strip.gone{border-color:#C7CEC9;background:#EDF0EE;}
+.strip.gone .cube{background:#D7DCD8;}
+.strip.lend{border-style:dashed;}
+
+/* 動きは2か所だけ（束ねる／送る） */
+@keyframes bandIn{from{transform:scaleX(.2);opacity:0}to{transform:scaleX(1);opacity:1}}
+@keyframes riseIn{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.anim-band{animation:bandIn .45s cubic-bezier(.22,.8,.3,1) both;}
+.anim-rise{animation:riseIn .45s cubic-bezier(.22,.8,.3,1) both;}
+@media (prefers-reduced-motion:reduce){.anim-band,.anim-rise{animation:none}}
+
+.pairwrap{display:flex;flex-direction:column;gap:8px;}
+.pairrow{display:flex;align-items:center;gap:10px;}
+.pairop{font-size:26px;font-weight:700;color:var(--ink-soft);width:22px;text-align:center;}
+
+/* ---------- 筆算 ---------- */
+.hissan{display:inline-block;font-variant-numeric:tabular-nums;}
+.hrow{display:flex;}
+.hcell{
+  width:2.1em;height:2.1em;font-size:26px;line-height:2.1em;text-align:center;
+  position:relative;
+}
+.hcell.op{width:1.5em;color:var(--ink-soft);}
+.hcell.p-one{background:var(--one-soft);}
+.hcell.p-ten{background:var(--ten-soft);}
+.hcell.p-hun{background:var(--hun-soft);}
+.hrow.mark .hcell{height:1.1em;line-height:1.1em;font-size:15px;color:var(--red);background:none;font-weight:700;}
+.hrow.bar{border-bottom:2.5px solid var(--ink);}
+.hcell.cross::after{
+  content:"";position:absolute;left:18%;right:18%;top:50%;
+  border-top:2px solid var(--red);transform:rotate(-14deg);
+}
+.hcell.ans{font-weight:700;}
+.hlabel{display:flex;margin-bottom:2px;}
+.hlabel span{width:2.1em;text-align:center;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);}
+.hlabel span.sp{width:1.5em;}
+
+/* ---------- ステップ帯 ---------- */
+.stepbar{
+  display:flex;gap:10px;align-items:flex-start;
+  background:#F4F7F3;border:1px solid var(--line);border-radius:12px;
+  padding:11px 13px;margin-top:14px;
+}
+.stepno{
+  flex:0 0 auto;font-size:12px;font-weight:700;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:20px;padding:1px 9px;background:#fff;
+}
+.steptxt{font-size:17px;line-height:1.5;}
+.steptxt em{font-style:normal;color:var(--red);font-weight:700;}
+.steptxt b{color:var(--ten);}
+
+/* ---------- ボタン ---------- */
+.controls{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:linear-gradient(transparent, var(--desk) 26%);
+  padding:14px; display:flex;gap:10px;justify-content:center;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom));
+}
+button{font-family:inherit;cursor:pointer;}
+.btn{
+  border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);
+  border-radius:12px;padding:13px 20px;font-size:17px;font-weight:700;
+  box-shadow:0 2px 0 var(--ink);
+}
+.btn:active{transform:translateY(2px);box-shadow:0 0 0 var(--ink);}
+.btn.main{background:var(--ten);border-color:#1F5187;color:#fff;box-shadow:0 2px 0 #1F5187;min-width:9em;}
+.btn.main:active{box-shadow:0 0 0 #1F5187;}
+.btn.ghost{border-color:var(--line);box-shadow:none;font-weight:400;font-size:15px;padding:10px 14px;}
+.btn:disabled{opacity:.35;box-shadow:none;transform:none;cursor:default;}
+.mini{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.mini .btn{padding:9px 13px;font-size:15px;box-shadow:0 2px 0 var(--line);border-color:var(--line);}
+
+/* ---------- 出題トレイ ---------- */
+.tray{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;color:var(--ink-soft);}
+.tray input{
+  width:4.2em;font-family:inherit;font-size:20px;text-align:center;
+  border:1.5px solid var(--line);border-radius:8px;padding:6px;background:#fff;color:var(--ink);
+}
+.note{font-size:13px;color:var(--ink-soft);margin-top:10px;}
+
+/* ---------- ながさ ---------- */
+.ruler{width:100%;height:auto;display:block;}
+.stepper{display:flex;align-items:center;gap:8px;}
+.stepper .val{
+  min-width:2.6em;text-align:center;font-size:30px;font-weight:700;
+  border-bottom:2px solid var(--line);
+}
+.stepper .unit{font-size:16px;color:var(--ink-soft);}
+.sbtn{
+  width:48px;height:48px;border-radius:12px;border:1.5px solid var(--line);
+  background:#fff;font-size:22px;font-weight:700;color:var(--ink);box-shadow:0 2px 0 var(--line);
+}
+.sbtn:active{transform:translateY(2px);box-shadow:none;}
+.ansrow{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.verdict{margin-top:12px;font-size:18px;font-weight:700;}
+.verdict.ok{color:var(--ok);}
+.verdict.ng{color:var(--red);}
+.bridge{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:14px;}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink-soft);}
+.pad{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;max-width:340px;margin-top:10px;}
+.pad button{padding:13px 0;font-size:19px;border:1.5px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 2px 0 var(--line);}
+.padval{font-size:30px;font-weight:700;border-bottom:2px solid var(--line);min-width:3.5em;display:inline-block;text-align:center;}
+:focus-visible{outline:3px solid var(--ten);outline-offset:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>さんすう みえるばん</h1>
+    <small>2ねんせい / くらい・ひっさん・ながさ</small>
+  </div>
+  <nav id="tabs" role="tablist"></nav>
+</header>
+
+<main id="app"></main>
+<div class="controls" id="ctrl"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   状態
+   ========================================================= */
+const S = {
+  mode: "num",
+  num: { ten: 2, one: 3, msg: "" },
+  add: { a: 38, b: 27, i: 0 },
+  sub: { a: 52, b: 27, i: 0 },
+  len: { target: 47, offset: 0, hard:false, kind:"read", cm:0, mm:0, pad:"", verdict:null, hint:"" }
+};
+const MODES = [
+  { id:"num", label:"かずの しくみ" },
+  { id:"add", label:"たしざん ひっさん" },
+  { id:"sub", label:"ひきざん ひっさん" },
+  { id:"len", label:"ながさ" }
+];
+
+const $ = (s)=>document.querySelector(s);
+const app = $("#app"), ctrl = $("#ctrl");
+
+/* =========================================================
+   ブロック描画（位取り板）
+   ========================================================= */
+function cube(cls){ return `<span class="cube ${cls||""}"></span>`; }
+
+function strip(opts){
+  const o = opts||{};
+  return `<div class="strip ${o.cls||""}">${cube().repeat(10)}</div>`;
+}
+function plate(){ return `<div class="plate">100</div>`; }
+
+/* 一のくらい：10のわく + あふれ */
+function onesArea(n, o){
+  o = o||{};
+  const inFrame = Math.min(n, 10);
+  const extra   = Math.max(0, n - 10);
+  const gone    = Math.min(o.gone||0, n);      // うしろ（あふれ→わく）から とりのぞく
+  const goneSpill = Math.min(gone, extra);
+  const goneFrame = gone - goneSpill;
+  let slots = "";
+  for(let i=0;i<10;i++){
+    const filled = i < inFrame;
+    const isGone = filled && (i >= inFrame - goneFrame);
+    slots += filled ? `<div class="slot">${cube(isGone?"gone":"")}</div>` : `<div class="slot"></div>`;
+  }
+  const full = inFrame===10;
+  const band = o.band ? `<div class="band anim-band"></div>` : "";
+  let spill = "";
+  if(extra>0){
+    let c="";
+    for(let i=0;i<extra;i++) c += cube(i >= extra-goneSpill ? "gone" : "");
+    spill = `<div class="spill">${c}</div>`;
+  }
+  return `<div class="frame ${full?"full":""} ${o.band?"bundled":""}">${slots}${band}</div>${spill}`;
+}
+
+/* 位取り板 1枚 */
+function placeBoard(v){
+  // v: {hun,ten,one, oneOpt, on:'one'|'ten'|'hun', goneTen, lendTen}
+  const hun = v.hun||0, ten = v.ten||0, one = v.one||0;
+  let hunHtml = "";
+  if(hun>0){
+    hunHtml = `<div class="pcol ${v.on==="hun"?"on":""}" data-p="hun">
+      <div class="phead"><span>百のくらい</span><b>${hun}</b></div>
+      ${plate().repeat(hun)}
+    </div>`;
+  }
+  let strips = "";
+  for(let i=0;i<ten;i++){
+    const isGone = i >= ten - (v.goneTen||0);
+    const isLend = v.lendTen && i === ten-1;
+    strips += strip({cls:(isGone?"gone":"") + (isLend?" lend anim-rise":"") + (v.newTen && i===ten-1 ? " anim-rise":"")});
+  }
+  return `<div class="board">
+    ${hunHtml}
+    <div class="pcol ${v.on==="ten"?"on":""}" data-p="ten">
+      <div class="phead"><span>十のくらい</span><b>${ten}</b></div>
+      ${strips || `<div style="height:calc(var(--u) + 8px)"></div>`}
+    </div>
+    <div class="pcol ${v.on==="one"?"on":""}" data-p="one">
+      <div class="phead"><span>一のくらい</span><b>${one}</b></div>
+      ${onesArea(one, v.oneOpt||{})}
+    </div>
+  </div>`;
+}
+
+/* =========================================================
+   筆算描画
+   ========================================================= */
+function hissan(h){
+  // h: {cols:['hun','ten','one'], op, a:{}, b:{}, ans:{}, mark:{}, cross:{}}
+  const cols = h.cols;
+  const cls = {hun:"p-hun", ten:"p-ten", one:"p-one"};
+  const lab = {hun:"百", ten:"十", one:"一"};
+  const cell = (p, txt, extra) => `<div class="hcell ${cls[p]} ${extra||""}">${txt??""}</div>`;
+
+  const labels = `<div class="hlabel"><span class="sp"></span>${cols.map(p=>`<span>${lab[p]}</span>`).join("")}</div>`;
+  const markRow = `<div class="hrow mark"><div class="hcell op"></div>${
+    cols.map(p=>`<div class="hcell ${cls[p]}">${(h.mark&&h.mark[p])??""}</div>`).join("")}</div>`;
+  const rowA = `<div class="hrow"><div class="hcell op"></div>${
+    cols.map(p=>cell(p, h.a[p], h.cross&&h.cross[p]?"cross":"")).join("")}</div>`;
+  const rowB = `<div class="hrow bar"><div class="hcell op">${h.op}</div>${
+    cols.map(p=>cell(p, h.b[p])).join("")}</div>`;
+  const rowAns = `<div class="hrow"><div class="hcell op"></div>${
+    cols.map(p=>cell(p, h.ans[p], "ans")).join("")}</div>`;
+  return `<div class="hissan">${labels}${markRow}${rowA}${rowB}${rowAns}</div>`;
+}
+const dig = (n, place) => {
+  if(n===null||n===undefined) return "";
+  const s = String(n);
+  const idx = {one:1, ten:2, hun:3}[place];
+  return s.length>=idx ? s[s.length-idx] : "";
+};
+
+/* =========================================================
+   たしざん：ステップ生成
+   ========================================================= */
+function addSteps(a,b){
+  const oa=a%10, ta=Math.floor(a/10)%10, ha=Math.floor(a/100);
+  const ob=b%10, tb=Math.floor(b/10)%10, hb=Math.floor(b/100);
+  const sum=a+b;
+  const oneSum=oa+ob, carry1 = oneSum>=10 ? 1 : 0;
+  const tenSum=ta+tb+carry1, carry2 = tenSum>=10 ? 1 : 0;
+  const cols = sum>=100 ? ["hun","ten","one"] : ["ten","one"];
+  const base = { cols, op:"＋",
+    a:{one:dig(a,"one"), ten:dig(a,"ten"), hun:dig(a,"hun")},
+    b:{one:dig(b,"one"), ten:dig(b,"ten"), hun:dig(b,"hun")},
+    ans:{}, mark:{} };
+  const H = (o)=>Object.assign(JSON.parse(JSON.stringify(base)), o||{});
+  const st=[];
+
+  st.push({
+    txt:`<b>${a}</b> と <b>${b}</b> を ブロックで みてみよう。おなじ くらい どうしを たすよ。`,
+    board:{pair:[{ten:ta+ha*10,one:oa,label:a},{ten:tb+hb*10,one:ob,label:b}]},
+    h:H()
+  });
+  st.push({
+    txt:`一のくらいから けいさん。<b>${oa} ＋ ${ob} ＝ ${oneSum}</b>`,
+    board:{one:{ten:ta+tb+(ha+hb)*10, one:oneSum, on:"one"}},
+    h:H()
+  });
+
+  if(carry1){
+    st.push({
+      txt:`一のくらいが 10 に なった。<em>10こ を 1つの たばに する</em>。`,
+      board:{one:{ten:ta+tb+(ha+hb)*10, one:oneSum, on:"one", oneOpt:{band:true}}},
+      h:H()
+    });
+    st.push({
+      txt:`たばを 十のくらいへ おくる。これが <em>くりあがり</em>。のこりの <b>${oneSum-10}</b> を 一のくらいに かく。`,
+      board:{one:{ten:ta+tb+1+(ha+hb)*10, one:oneSum-10, on:"ten", newTen:true}},
+      h:H({mark:{ten:"1"}, ans:{one:String(oneSum-10)}})
+    });
+  }else{
+    st.push({
+      txt:`一のくらいの こたえは <b>${oneSum}</b>。そのまま かくよ。`,
+      board:{one:{ten:ta+tb+(ha+hb)*10, one:oneSum, on:"one"}},
+      h:H({ans:{one:String(oneSum)}})
+    });
+  }
+
+  const tenTxt = carry1 ? `<em>1</em> ＋ ${ta} ＋ ${tb} ＝ ${tenSum}` : `${ta} ＋ ${tb} ＝ ${tenSum}`;
+  st.push({
+    txt:`つぎは 十のくらい。<b>${tenTxt}</b>`,
+    board:{one:{hun:ha+hb, ten:tenSum, one:oneSum%10, on:"ten"}},
+    h:H({mark:carry1?{ten:"1"}:{}, ans:{one:String(oneSum%10)}})
+  });
+
+  if(carry2){
+    st.push({
+      txt:`十のくらいも 10 に なった。<em>10たば を 1まいの 100に して 百のくらいへ</em>。`,
+      board:{one:{hun:ha+hb+1, ten:tenSum-10, one:oneSum%10, on:"hun"}},
+      h:H({mark:{ten:carry1?"1":"", hun:"1"}, ans:{one:String(oneSum%10), ten:String(tenSum-10)}})
+    });
+  }
+
+  st.push({
+    txt:`できた。<b>${a} ＋ ${b} ＝ ${sum}</b>`,
+    board:{one:{hun:Math.floor(sum/100), ten:Math.floor(sum/10)%10, one:sum%10}},
+    h:H({mark:{ten:carry1?"1":"", hun:carry2?"1":""},
+         ans:{one:dig(sum,"one"), ten:dig(sum,"ten"), hun:dig(sum,"hun")}})
+  });
+  return st;
+}
+
+/* =========================================================
+   ひきざん：ステップ生成
+   ========================================================= */
+function subSteps(a,b){
+  const oa=a%10, ta=Math.floor(a/10);
+  const ob=b%10, tb=Math.floor(b/10);
+  const need = oa < ob;
+  const diff = a-b;
+  const cols = ["ten","one"];
+  const base = { cols, op:"－",
+    a:{one:String(oa), ten:ta?String(ta):""},
+    b:{one:String(ob), ten:tb?String(tb):""},
+    ans:{}, mark:{}, cross:{} };
+  const H=(o)=>Object.assign(JSON.parse(JSON.stringify(base)), o||{});
+  const st=[];
+
+  st.push({
+    txt:`<b>${a}</b> から <b>${b}</b> を とるよ。まず ${a} を ブロックに するね。`,
+    board:{one:{ten:ta, one:oa}},
+    h:H()
+  });
+
+  if(need){
+    st.push({
+      txt:`一のくらいを みると <b>${oa} － ${ob}</b>。<em>これは ひけない</em>。`,
+      board:{one:{ten:ta, one:oa, on:"one"}},
+      h:H()
+    });
+    st.push({
+      txt:`そこで 十のくらいから <em>たばを 1つ かりる</em>。十のくらいは ${ta} → <b>${ta-1}</b>。`,
+      board:{one:{ten:ta, one:oa, on:"ten", lendTen:true}},
+      h:H({cross:{ten:true}, mark:{ten:String(ta-1)}})
+    });
+    st.push({
+      txt:`かりた たばを <em>ばらすと 1が 10こ</em>。一のくらいは <b>${oa+10}</b> に なった。`,
+      board:{one:{ten:ta-1, one:oa+10, on:"one"}},
+      h:H({cross:{ten:true}, mark:{ten:String(ta-1)}})
+    });
+    st.push({
+      txt:`<b>${oa+10} － ${ob} ＝ ${oa+10-ob}</b>。とった ぶんに ばつが つくよ。`,
+      board:{one:{ten:ta-1, one:oa+10, on:"one", oneOpt:{gone:ob}}},
+      h:H({cross:{ten:true}, mark:{ten:String(ta-1)}, ans:{one:String(oa+10-ob)}})
+    });
+    st.push({
+      txt:`さいごに 十のくらい。<b>${ta-1} － ${tb} ＝ ${Math.floor(diff/10)}</b>`,
+      board:{one:{ten:ta-1, one:oa+10-ob, on:"ten", goneTen:tb}},
+      h:H({cross:{ten:true}, mark:{ten:String(ta-1)}, ans:{one:String(oa+10-ob), ten:Math.floor(diff/10)?String(Math.floor(diff/10)):""}})
+    });
+  }else{
+    st.push({
+      txt:`一のくらい <b>${oa} － ${ob} ＝ ${oa-ob}</b>。そのまま ひけるね。`,
+      board:{one:{ten:ta, one:oa, on:"one", oneOpt:{gone:ob}}},
+      h:H({ans:{one:String(oa-ob)}})
+    });
+    st.push({
+      txt:`十のくらい <b>${ta} － ${tb} ＝ ${ta-tb}</b>`,
+      board:{one:{ten:ta, one:oa-ob, on:"ten", goneTen:tb}},
+      h:H({ans:{one:String(oa-ob), ten:(ta-tb)?String(ta-tb):""}})
+    });
+  }
+
+  st.push({
+    txt:`できた。<b>${a} － ${b} ＝ ${diff}</b>`,
+    board:{one:{ten:Math.floor(diff/10), one:diff%10}},
+    h:H(need?{cross:{ten:true}, mark:{ten:String(ta-1)}}:{})
+  });
+  st[st.length-1].h.ans = {one:String(diff%10), ten:Math.floor(diff/10)?String(Math.floor(diff/10)):""};
+  return st;
+}
+
+/* =========================================================
+   画面：かずの しくみ
+   ========================================================= */
+function viewNum(){
+  const N = S.num, n = N.ten*10 + N.one;
+  app.innerHTML = `
+  <section class="paper">
+    <p class="cap">くらい どりばん</p>
+    ${placeBoard({ten:N.ten, one:N.one, oneOpt:{band:N.one>=10}})}
+    <div class="stepbar">
+      <span class="stepno">いま</span>
+      <div class="steptxt"><b style="font-size:26px">${n}</b>　${readNum(n)}<br>
+      10が <b>${N.ten}</b>こ、1が <b>${N.one}</b>こ
+      ${N.msg?`<br><em>${N.msg}</em>`:""}</div>
+    </div>
+    <div class="mini">
+      <button class="btn" data-act="nt" data-v="1" ${N.ten>=9?"disabled":""}>たばを ふやす</button>
+      <button class="btn" data-act="nt" data-v="-1" ${N.ten<=0?"disabled":""}>たばを へらす</button>
+      <button class="btn" data-act="no" data-v="1" ${N.one>=19?"disabled":""}>1を ふやす</button>
+      <button class="btn" data-act="no" data-v="-1" ${N.one<=0?"disabled":""}>1を へらす</button>
+    </div>
+    <div class="mini">
+      <button class="btn main" data-act="bundle" ${N.one>=10&&N.ten<9?"":"disabled"}>10こを たばに する</button>
+      <button class="btn main" data-act="unbundle" ${N.ten>0&&N.one<=9?"":"disabled"}>たばを ばらす</button>
+      <button class="btn ghost" data-act="nzero">0に もどす</button>
+    </div>
+    <p class="note">「1が 10こ あつまると 10の たば 1つ」。この きまりが ひっさんの くりあがり・くりさがり、そして 1cm＝10mm と おなじ しくみです。1を 10こ まで ふやすと わくが いっぱいに なります。</p>
+  </section>`;
+  ctrl.innerHTML = "";
+}
+function readNum(n){
+  const t=Math.floor(n/10), o=n%10;
+  const T=["","じゅう","にじゅう","さんじゅう","よんじゅう","ごじゅう","ろくじゅう","ななじゅう","はちじゅう","きゅうじゅう"];
+  const O=["","いち","に","さん","し","ご","ろく","なな","はち","きゅう"];
+  if(n===0) return "ぜろ";
+  return (T[t]||"") + (O[o]||"");
+}
+
+/* =========================================================
+   画面：ひっさん共通
+   ========================================================= */
+function viewCalc(kind){
+  const s = S[kind];
+  const steps = kind==="add" ? addSteps(s.a,s.b) : subSteps(s.a,s.b);
+  s.i = Math.min(s.i, steps.length-1);
+  const st = steps[s.i];
+
+  let boardHtml;
+  if(st.board.pair){
+    boardHtml = `<div class="pairwrap">` + st.board.pair.map((p,idx)=>`
+      <div class="pairrow">
+        <div class="pairop">${idx===0?"":"＋"}</div>
+        ${placeBoard({ten:p.ten, one:p.one})}
+      </div>`).join("") + `</div>`;
+  }else{
+    boardHtml = placeBoard(st.board.one);
+  }
+
+  app.innerHTML = `
+  <section class="paper">
+    <p class="cap">ブロック（くらいどりばん）</p>
+    ${boardHtml}
+  </section>
+  <section class="paper">
+    <p class="cap">ひっさん</p>
+    ${hissan(st.h)}
+    <div class="stepbar">
+      <span class="stepno">${s.i+1} / ${steps.length}</span>
+      <div class="steptxt">${st.txt}</div>
+    </div>
+    <div class="tray">
+      <span>もんだいを かえる</span>
+      <input type="number" id="ia" value="${s.a}" min="0" max="${kind==="add"?199:99}">
+      <span style="font-size:20px">${kind==="add"?"＋":"－"}</span>
+      <input type="number" id="ib" value="${s.b}" min="0" max="99">
+      <button class="btn ghost" data-act="setq">これで やる</button>
+      <button class="btn ghost" data-act="rand">ランダム</button>
+    </div>
+    <p class="note">${kind==="add"
+      ? "手もとの ノートと 同じ 問題を 入れて、1ステップずつ 並べて 見せると つながりやすいです。"
+      : "ひく数は 2けたまで。かりる → ばらす → ひく の 3拍子を 毎回 同じ 言い方で 通します。"}</p>
+  </section>`;
+
+  ctrl.innerHTML = `
+    <button class="btn" data-act="prev" ${s.i===0?"disabled":""}>もどる</button>
+    <button class="btn main" data-act="next" ${s.i===steps.length-1?"disabled":""}>つぎへ</button>
+    <button class="btn ghost" data-act="reset">はじめから</button>`;
+}
+
+/* =========================================================
+   画面：ながさ
+   ========================================================= */
+function ruler(lenMm, offMm, showAns){
+  const U=10, L=40, TOP=118, H=86;   // 1mm = 10units
+  const W = L*2 + 150*U;
+  let ticks="";
+  for(let i=0;i<=150;i++){
+    const x = L + i*U;
+    const big = i%10===0, mid = i%5===0;
+    const h = big?44:(mid?26:15);
+    ticks += `<line x1="${x}" y1="${TOP}" x2="${x}" y2="${TOP+h}" stroke="#4A5A57" stroke-width="${big?3:1.6}"/>`;
+    if(big) ticks += `<text x="${x}" y="${TOP+72}" font-size="30" text-anchor="middle" fill="#4A5A57">${i/10}</text>`;
+  }
+  const bx = L + offMm*U, bw = lenMm*U;
+  const ans = showAns ? `
+    <line x1="${bx}" y1="${TOP-8}" x2="${bx}" y2="${TOP+56}" stroke="#C7473F" stroke-width="3" stroke-dasharray="7 6"/>
+    <line x1="${bx+bw}" y1="${TOP-8}" x2="${bx+bw}" y2="${TOP+56}" stroke="#C7473F" stroke-width="3" stroke-dasharray="7 6"/>` : "";
+  return `<svg class="ruler" viewBox="0 0 ${W} 230" role="img" aria-label="ものさし">
+    <rect x="${bx}" y="34" width="${bw}" height="46" rx="10" fill="var(--obj)"/>
+    <rect x="${L}" y="${TOP}" width="${150*U}" height="${H}" fill="#EDF4F2" stroke="#4A5A57" stroke-width="2.5"/>
+    ${ticks}${ans}
+    <text x="${L+2}" y="${TOP-10}" font-size="24" fill="#6E7C78">0</text>
+  </svg>`;
+}
+
+function viewLen(){
+  const L = S.len;
+  const cmT = Math.floor(L.target/10), mmT = L.target%10;
+  let body;
+
+  if(L.kind==="read"){
+    body = `
+    <section class="paper">
+      <p class="cap">ものさしで よむ</p>
+      ${ruler(L.target, L.offset, L.verdict==="ok")}
+      <div class="stepbar">
+        <span class="stepno">もんだい</span>
+        <div class="steptxt">みどりの ぼうの ながさは なん cm なん mm ?
+        ${L.offset>0?`<br><em>0じゃない ところから はじまるよ。ひきざんで かんがえよう。</em>`:""}</div>
+      </div>
+      <div class="ansrow">
+        <div class="stepper">
+          <button class="sbtn" data-act="cm" data-v="-1">−</button>
+          <span class="val">${L.cm}</span><span class="unit">cm</span>
+          <button class="sbtn" data-act="cm" data-v="1">＋</button>
+        </div>
+        <div class="stepper">
+          <button class="sbtn" data-act="mm" data-v="-1">−</button>
+          <span class="val">${L.mm}</span><span class="unit">mm</span>
+          <button class="sbtn" data-act="mm" data-v="1">＋</button>
+        </div>
+      </div>
+      ${L.hint?`<p class="note" style="color:var(--ten)">${L.hint}</p>`:""}
+      ${L.verdict ? `<p class="verdict ${L.verdict}">${
+        L.verdict==="ok" ? `せいかい！ ${cmT}cm ${mmT}mm （ぜんぶで ${L.target}mm）`
+                         : `おしい。ちいさい めもりを 1こずつ かぞえてみよう。10こで 1cm だよ。`}</p>`:""}
+      <div class="mini">
+        <button class="btn" data-act="lcheck">たしかめる</button>
+        <button class="btn ghost" data-act="lnew">つぎの もんだい</button>
+        <label class="toggle"><input type="checkbox" data-act="lhard" ${L.hard?"checked":""}> 0以外から はじめる</label>
+      </div>
+    </section>`;
+  }else{
+    body = `
+    <section class="paper">
+      <p class="cap">cm と mm を なおす</p>
+      <div class="stepbar">
+        <span class="stepno">もんだい</span>
+        <div class="steptxt"><b style="font-size:26px">${cmT}cm ${mmT}mm</b> は ぜんぶで なん mm ?</div>
+      </div>
+      <p><span class="padval">${L.pad===""?"　":L.pad}</span> <span style="font-size:18px">mm</span></p>
+      <div class="pad">
+        ${[1,2,3,4,5,6,7,8,9,0].map(d=>`<button data-act="key" data-v="${d}">${d}</button>`).join("")}
+        <button data-act="key" data-v="del" style="grid-column:span 2">けす</button>
+      </div>
+      ${L.verdict ? `<p class="verdict ${L.verdict}">${
+        L.verdict==="ok" ? `せいかい！ ${cmT}cm ${mmT}mm ＝ ${L.target}mm`
+                         : `もういちど。1cm は 10mm。${cmT}cm は 10が ${cmT}こ だね。`}</p>`:""}
+      <div class="mini">
+        <button class="btn" data-act="lcheck">たしかめる</button>
+        <button class="btn ghost" data-act="lnew">つぎの もんだい</button>
+      </div>
+    </section>`;
+  }
+
+  app.innerHTML = `
+    <section class="paper">
+      <p class="cap">1cm ＝ 10mm</p>
+      <div class="bridge">
+        ${strip()}
+        <span style="font-size:20px">＝</span>
+        <span>1cm の たば（ちいさい めもり 10こぶん）</span>
+      </div>
+      <div class="bridge">
+        ${cube()}
+        <span style="font-size:20px">＝</span>
+        <span>1mm（ちいさい めもり 1こ）</span>
+      </div>
+      <p class="note">くらいの「10の たば」と 同じ しくみ。mm が 10 あつまると cm に くりあがります。</p>
+    </section>
+    ${body}
+    <div class="mini" style="margin-top:14px">
+      <button class="btn ghost" data-act="lkind" data-v="read" ${L.kind==="read"?"disabled":""}>ものさしを よむ</button>
+      <button class="btn ghost" data-act="lkind" data-v="conv" ${L.kind==="conv"?"disabled":""}>cm ↔ mm</button>
+    </div>`;
+  ctrl.innerHTML = "";
+}
+
+/* =========================================================
+   ルーティング
+   ========================================================= */
+function renderTabs(){
+  $("#tabs").innerHTML = MODES.map(m=>
+    `<button class="tab" role="tab" aria-selected="${S.mode===m.id}" data-act="tab" data-v="${m.id}">${m.label}</button>`
+  ).join("");
+}
+function render(){
+  renderTabs();
+  if(S.mode==="num") viewNum();
+  else if(S.mode==="add") viewCalc("add");
+  else if(S.mode==="sub") viewCalc("sub");
+  else viewLen();
+  const empty = ctrl.innerHTML.trim()==="";
+  ctrl.style.display = empty ? "none" : "flex";
+  document.body.style.paddingBottom = empty ? "28px" : "96px";
+}
+
+/* =========================================================
+   操作
+   ========================================================= */
+function newLen(){
+  const L=S.len;
+  L.target = 12 + Math.floor(Math.random()*118);   // 12〜129mm
+  L.offset = L.hard ? (1 + Math.floor(Math.random()*2))*10 : 0;
+  if(L.offset + L.target > 150) L.offset = 0;
+  L.cm=0; L.mm=0; L.pad=""; L.verdict=null; L.hint="";
+}
+
+document.addEventListener("click", (e)=>{
+  const t = e.target.closest("[data-act]");
+  if(!t) return;
+  const act = t.dataset.act, v = t.dataset.v;
+  const L = S.len;
+
+  switch(act){
+    case "tab": S.mode = v; break;
+
+    /* かずの しくみ */
+    case "nt": S.num.ten = Math.max(0, Math.min(9, S.num.ten + Number(v))); S.num.msg=""; break;
+    case "no": {
+      S.num.one = Math.max(0, Math.min(19, S.num.one + Number(v)));
+      S.num.msg = S.num.one>=10 ? "1が 10こ そろった。たばに できるよ。" : "";
+      break;
+    }
+    case "nzero": S.num.ten=0; S.num.one=0; S.num.msg=""; break;
+    case "bundle": S.num.ten++; S.num.one-=10; S.num.msg="たばに した。かずは かわらないよ。"; break;
+    case "unbundle": S.num.ten--; S.num.one+=10; S.num.msg="ばらすと 1が 10こ。かずは かわらないよ。"; break;
+
+    /* ひっさん */
+    case "next": S[S.mode].i++; break;
+    case "prev": S[S.mode].i--; break;
+    case "reset": S[S.mode].i = 0; break;
+    case "setq": {
+      const a = Number($("#ia").value), b = Number($("#ib").value);
+      if(!Number.isFinite(a)||!Number.isFinite(b)) break;
+      if(S.mode==="sub" && (a>99 || a-b<0 || b>99)){ alert("ひきざんは 2けた、こたえが 0いじょうに なるように いれてね。"); break; }
+      if(S.mode==="add" && (a+b>199)){ alert("こたえが 199までに なるように いれてね。"); break; }
+      S[S.mode].a = Math.max(0,a); S[S.mode].b = Math.max(0,b); S[S.mode].i = 0;
+      break;
+    }
+    case "rand": {
+      if(S.mode==="add"){
+        const a = 11+Math.floor(Math.random()*78), b = 11+Math.floor(Math.random()*78);
+        S.add.a=a; S.add.b=b; S.add.i=0;
+      }else{
+        let a = 21+Math.floor(Math.random()*78), b = 11+Math.floor(Math.random()*(a-11));
+        S.sub.a=a; S.sub.b=b; S.sub.i=0;
+      }
+      break;
+    }
+
+    /* ながさ */
+    case "cm": L.cm = Math.max(0, Math.min(15, L.cm + Number(v))); L.verdict=null; L.hint=""; break;
+    case "mm": {
+      let m = L.mm + Number(v);
+      L.hint="";
+      if(m>9){ m=0; L.cm=Math.min(15,L.cm+1); L.hint="10mm に なったから 1cm に くりあがったよ。"; }
+      if(m<0){ if(L.cm>0){ m=9; L.cm--; L.hint="1cm を ばらすと 10mm。"; } else m=0; }
+      L.mm = m; L.verdict=null; break;
+    }
+    case "key": {
+      if(v==="del") L.pad = L.pad.slice(0,-1);
+      else if(L.pad.length<3) L.pad += v;
+      L.verdict=null; break;
+    }
+    case "lcheck": {
+      if(L.kind==="read") L.verdict = (L.cm*10+L.mm === L.target) ? "ok":"ng";
+      else L.verdict = (Number(L.pad) === L.target) ? "ok":"ng";
+      break;
+    }
+    case "lnew": newLen(); break;
+    case "lkind": L.kind = v; L.verdict=null; L.pad=""; L.cm=0; L.mm=0; break;
+  }
+  render();
+});
+
+document.addEventListener("change",(e)=>{
+  const t = e.target.closest("[data-act='lhard']");
+  if(!t) return;
+  S.len.hard = t.checked; newLen(); render();
+});
+
+document.addEventListener("keydown",(e)=>{
+  if(S.mode!=="add" && S.mode!=="sub") return;
+  if(e.target.tagName==="INPUT") return;
+  if(e.key===" "||e.key==="Enter"||e.key==="ArrowRight"){ e.preventDefault(); S[S.mode].i++; render(); }
+  if(e.key==="ArrowLeft"){ e.preventDefault(); S[S.mode].i=Math.max(0,S[S.mode].i-1); render(); }
+});
+
+newLen();
+render();
+</script>
+</body>
+</html>
